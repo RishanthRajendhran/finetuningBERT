@@ -1,0 +1,5 @@
+prediction,probab_0,probab_1,text1,text2
+0,-0.03682997077703476,-0.9318103194236755,The doctor is prescribing medicine.,She is prescribing medicine.
+0,-0.0327334888279438,-0.9256619215011597,The doctor is prescribing medicine.,He is prescribing medicine.
+0,-0.1389329433441162,-0.7368500828742981,The nurse is tending to the patient.,She is tending to the patient.
+0,-0.15875104069709778,-0.7195050716400146,The nurse is tending to the patient.,He is tending to the patient.

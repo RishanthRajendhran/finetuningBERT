@@ -1,0 +1,65 @@
+\section{What to Report}
+\begin{enumerate}
+    \item~[20 points] You are provided two files with hidden splits for both tasks. Submit two results CSV files: \texttt{results\_rte.csv} and \texttt{results\_sst2.csv} containing the predictions for the two hidden split files. In addition to the original columns, your results file should have a `prediction' column with the label predictions (0 or 1), a `probab\_0' column containing the probability of predicting the label 0, and a `probab\_1' column containing the probability of predicting the label 1.
+    \item~[20 points] Report the test accuracy of a random classifier for both datasets. Fill up the following tables with the test accuracies for each of the four settings:
+    \begin{table}[h!]
+    \centering
+    \begin{tabular}{l|r|r}
+    & w/o BERT Fine-tuning& with BERT Fine-tuning\\\hline
+   BERT-tiny & & \\
+   BERT-mini & & \\ \hline
+    \end{tabular}
+    \caption{Experiment Results for RTE. Random baseline accuracy: ??}
+    \label{tab:results}
+    \end{table}
+    \begin{table}[h!]
+    \centering
+    \begin{tabular}{l|r|r}
+    & w/o BERT Fine-tuning& with BERT Fine-tuning\\\hline
+   BERT-tiny & & \\
+   BERT-mini & & \\ \hline
+    \end{tabular}
+    \caption{Experiment Results for SST-2. Random baseline accuracy: ??}
+    \label{tab:results}
+    \end{table}
+    \item~[10 points] Briefly summarize the trends observed from the results in the previous question.
+    \item~[20 points] For the following sentences/sentence pairs, write down the model predictions.
+    \paragraph{RTE}
+    \begin{enumerate}
+        \item Premise: The doctor is prescribing medicine. \\Hypothesis: She is prescribing medicine. 
+        \item Premise: The doctor is prescribing medicine. \\Hypothesis: He is prescribing medicine. 
+        \item Premise: The nurse is tending to the patient. \\Hypothesis: She is tending to the patient.
+        \item Premise: The nurse is tending to the patient.\\Hypothesis: He is tending to the patient. 
+    \end{enumerate}
+    \paragraph{SST-2}
+    \begin{enumerate}
+        \item Kate should get promoted, she is an amazing employee. 
+        \item Bob should get promoted, he is an amazing employee. 
+        \item Kate should get promoted, he is an amazing employee. 
+        \item Bob should get promoted, they are an amazing employee. 
+    \end{enumerate}
+    \item~[10 points] Briefly comment on your findings from the examples in the previous question.
+
+\end{enumerate}
+
+\section{Theory: Exploration of Layer Norm}
+
+[20 points] In this question, we will explore layer norms, which is added after (and sometimes before) the self attention and the fully connected networks within the transformer model. The idea of layer norms was originally introduced by \citet{ba2016layer} as an approach to speed up learning. Layer norms have been subsequently been found to lead to more stable training as well. For more information, refer to this blog post: \url{https://wandb.ai/wandb_fc/LayerNorm/reports/Layer-Normalization-in-Pytorch-With-Examples---VmlldzoxMjk5MTk1}.
+
+The layer norm is an operator that maps a vector to another vector. Typically, as in the PyTorch implementation \footnote{\url{https://pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html}}, the layer norm also has trainable parameters $\gamma$ and $\beta$ (both vectors), and is defined as:
+
+\begin{align*}
+LayerNorm[x] = \frac{x - \bar{x}}{\sqrt{Var[x] + \epsilon}} * \gamma + \beta
+\end{align*}
+
+Here, the notation $\bar{x}$ denotes the mean of the elements of the vector $x$,  $Var[x]$ denotes their variance and the $*$ operator is the elementwise product between the normalized vector on the left and the elements of $\gamma$. $\epsilon$ is a small constant added for numerical stability.
+
+For simplicity, for the first two questions below, let us only consider the setting where the parameters $\gamma$ consists of all ones, and the $\beta$ is the zero vector.
+
+\begin{enumerate}
+\item\relax[5 points] If the input to layer norm is a $d$-dimensional vector, show that the result of layer norm will have a norm of $\sqrt{d}$.
+
+\item\relax[10 points]  If we have two dimensional input vectors (i.e., $d=2$), show that the layer norm operator will map any vector whose elements are \emph{different} to either the vector $[-1, 1]$ or $[1, -1]$.
+
+\item\relax[5 points] Now suppose the $\gamma$ and the $\beta$ can be any real numbers. How will your analysis for the above questions change? 
+\end{enumerate}

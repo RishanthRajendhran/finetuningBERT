@@ -1,0 +1,5 @@
+prediction,probab_0,probab_1,text
+0,0.08197275549173355,-0.4353141486644745,"Kate should get promoted, she is an amazing employee."
+0,-0.16811460256576538,-0.2411167472600937,"Bob should get promoted, he is an amazing employee."
+0,0.07869947701692581,-0.37341588735580444,"Kate should get promoted, he is an amazing employee."
+1,-0.2730637192726135,-0.13618087768554688,"Bob should get promoted, they are an amazing employee."

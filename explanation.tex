@@ -1,0 +1,13 @@
+\section{BERT for Sentence/Sentence-Pair Classification}
+\label{sec: expl}
+BERT (\cite{devlin-etal-2019-bert}) is a transformer-based language model that became widely popular a few years back. The promise comes from the fact that it has been pre-trained on large amounts of data. BERT has shown to be, especially, useful since training even a simple linear classifier on BERT representations has shown to have promising results on a wide array of NLP tasks. BERT also offers the ability to tweak its model weights while training this linear classifier. This process is known as ``fine-tuning''. 
+
+In this mini-project, you will be training sentence and sentence-pair classifiers. BERT can classify up to two sentences. For sentence classification, every input sentence (\texttt{$<$sent$>$}) is prepended by the classifier  token(\texttt{[CLS]}) and followed by a separator token(\texttt{[SEP]}) to look like: ``\texttt{[CLS] $<$sent$>$ [SEP]}''. For the sentence-pair classification, task the first sentence is prepended and appended by the classifier and separator tokens respectively. This is then followed by the second sentence which is, in turn, followed by the separator token. Hence, the processed sentence pair looks like: ``\texttt{[CLS] $<$sent$_1>$ [SEP] $<$sent$_2>$ [SEP]}''. The representation corresponding to the \texttt{[CLS]} token is, generally, considered a representation for the sentence or sentence-pairs.
+
+The processed inputs are fed to the BERT which produces contextual representations of every input tokens~(more technically, sub-tokens). To obtain sentence or sentence-pair predictions, the representation corresponding to the \texttt{[CLS]} token is fed to a linear classifier which produces a distribution over the output labels.
+\begin{equation*}
+    \hat{y} = w.h_{[CLS]} + b
+\end{equation*}
+where \emph{w} and \emph{b} are the weights and bias terms of the linear classifier, and \emph{h$_{[CLS]}$} is the contextual representation corresponding to the \texttt{[CLS]} token.
+
+For more details on the BERT models, refer the class slides and Jay Alammar's ``The Illustrated BERT'' blogpost(\url{https://jalammar.github.io/illustrated-bert/}). In this mini-project, you will be familiarizing yourself with HuggingFace's transformers\footnote{\url{https://huggingface.co/docs/transformers/index}} library --- a library which houses BERT and other transformer models, and a toolkit on which contemporary NLP hinges.

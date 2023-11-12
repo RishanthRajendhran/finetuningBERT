@@ -1,0 +1,64 @@
+\documentclass[12pt, fullpage,letterpaper]{article}
+\usepackage{natbib}
+\bibliographystyle{unsrtnat}
+\usepackage[margin=1in]{geometry}
+\usepackage{url}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{booktabs}
+\usepackage{pgfplotstable}
+\usepackage{tikz-cd}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usepackage{hyperref}
+\usepackage{paralist}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{paralist}
+\usepackage{enumitem}
+\usepackage{pythonhighlight}
+\newcommand{\semester}{Fall 2023}
+\newcommand{\assignmentId}{4}
+\newcommand{\releaseDate}{November 7, 2023}
+\newcommand{\dueDate}{November 22, 2023}
+
+
+
+\newcommand{\bx}{{\bf x}}
+\newcommand{\bw}{{\bf w}}
+\DeclareMathOperator{\sgn}{sgn}
+
+\title{CS 6957: NLP with Neural Networks \semester}
+\author{Mini Project \assignmentId}
+\date{Handed out: \releaseDate\\
+  Due date: \dueDate}
+
+\begin{document}
+\maketitle
+
+\section*{General Instructions}
+
+{\footnotesize
+  \begin{itemize}
+
+  \item Feel free to discuss the mini project with the instructor or the TA.
+
+  \item Handwritten solutions will not be accepted.
+
+  \item  The homework is due by midnight of the due date. Please submit
+    the mini project on Canvas. You should upload three files: a report with answers to the questions below, a compressed file (\texttt{.zip} or \texttt{.tar.gz}) containing your code, and two results files.
+
+  \item Your code should be your own. You may use any libraries which may provide ease of implementation. However, built-in library methods for producing the output directly should not be used. Plagiarism of code will result in a zero.
+
+  \end{itemize}
+
+
+}
+
+\input{explanation.tex}
+%\input{ngram}
+\input{mp_bert}
+
+\input{questions.tex}
+% \input{extra-credit}
+\bibliography{refs}
+\end{document}

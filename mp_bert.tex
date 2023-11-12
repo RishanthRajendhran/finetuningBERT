@@ -1,0 +1,65 @@
+\section{Classifiers for the Mini-Project}
+In this mini-project, you will be training BERT-based classifiers for two tasks: (i) textual entailment and (ii) sentiment classification.
+
+
+
+\subsection{Data}
+As you might have noticed, we have not included any train, dev, or test data in the project files. You will be using the HuggingFace datasets (\url{https://huggingface.co/docs/datasets/index}) to obtain these splits. In order to get started, we highly recommend the datasets tutorial: \url{https://huggingface.co/docs/datasets/tutorial}. You will be using two datasets, one for the textual entailment task and one for the sentiment classification:
+\begin{enumerate}
+    \item \textbf{RTE.} Recognizing Textual Entailment (RTE) is a combination of datasets from early textual entailment challenges~\cite[earliest being][]{dagan2005pascal}. Textual Entailment is a sentence-pair classification task of assessing whether a certain ``premise" text entails a ``hypothesis" text. The label is binary, i.e., the premise entails the hypothesis (``entailment") or it does not (``not entailment"). You can get a glimpse of the data at \url{https://huggingface.co/datasets/yangwang825/rte}. Here, ``text1" corresponds to the premise and ``text2" to the hypothesis. You may use the ``label" column which assigns 0 to entailments and 1 to non-entailments as targets. To load the RTE dataset with the datasets library, you may use the path ``\texttt{yangwang825/rte}''.
+    \item \textbf{SST-2.} The Stanford Sentiment Treebank (SST) \cite{socher-etal-2013-recursive} contains sentiment annotations for movie reviews. The SST-2 variant classifies reviews in a binary (positive or negative) fashion. We will be using a subset of SST-2. You can view the data at \url{https://huggingface.co/datasets/gpt3mix/sst2}. The review text is under the column header ``sentence" while the label is in the column ``label" (0 for negative and 1 for positive). To load the SST-2 dataset with the datasets library, you may use the path ``\texttt{gpt3mix/sst2}''.
+\end{enumerate}
+
+\subsection{The Model}
+Once you have the dataset ready, you are ready to use the BERT models to build your classifiers. Particularly, you will be using two smaller variants of BERT --- tiny and mini. 
+\begin{enumerate}
+    \item \textbf{BERT-tiny}\footnote{https://huggingface.co/prajjwal1/bert-tiny}. This is the smallest version of the BERT model with two layers of transformer encoders and an embedding dimension of 128. You can use the model path \texttt{prajjwal1/bert-tiny}. (We will show how to use this path a bit later.)
+     \item \textbf{BERT-mini}\footnote{https://huggingface.co/prajjwal1/bert-mini}. This is the smallest version of the BERT model with four layers of transformer encoders and an embedding dimension of 256. You can use the model path \texttt{prajjwal1/bert-mini}.
+\end{enumerate}
+
+Training the BERT classifiers largely differs in two steps from the conventional NLP pipeline :
+\begin{enumerate}
+    \item \textbf{Tokenization.} There are several aspects of pre-processing and tokenization involved when working with pre-trained transformer models. In \S{\ref{sec: expl}}, we mentioned adding the classifier and separator tokens. Further, BERT breaks down tokens into word pieces or sub-words. Since BERT handles a maximum input size of 512 sub-tokens, sequences longer than 512 need to be truncated. Similarly, shorter sequences need to be appropriately padded to enable batching (just like you did in the previous mini-project) and padded tokens should not contribute to any attention or loss computations. Fortunately for us, the transformers library allows us to do all of this in a couple of lines. In this mini-project, you will be using the \texttt{BERTTokenizer}\footnote{\url{https://huggingface.co/docs/transformers/model_doc/bert#transformers.BertTokenizer}} or the \texttt{AutoTokenizer}\footnote{\url{https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoTokenizer}} class instances to instantiate the tokenizer. Here's an illustration:
+      \begin{python}
+    tokenizer = BERTTokenizer.from_pretrained(<path>)
+
+    # Data for sentence classification
+    sentences = ["sent1", "sent2"]
+    
+    # Data for pair classification
+    sentence_pairs_text1 =  ["sent3", "sent4"]
+    sentence_pairs_text2 =  ["sent5", "sent6"]
+
+    # Processed sentences for sentence classification
+    tokenized_inp = tokenizer(sentences, truncation=True, padding=True, return_tensors='pt')
+    # AND,
+    # Processed sentences for sentence classification
+    tokenized_inp = tokenizer( sentence_pairs_text1,  sentence_pairs_text2, truncation=True, padding=True, return_tensors='pt')
+    
+    \end{python} 
+
+    Here, \texttt{truncation=True} ensures sequences longer than 512 are appropriately truncated, \texttt{padding=True} pads shorter sequences such that the sequences are of the length of the sequence in the batch. The \texttt{return\_tensors=`pt'} ensures that PyTorch tensors are returned. The \texttt{<path>} refers to the model path described above. 
+
+
+    \item \textbf{Model.} This is the BERT model which you'll be using to obtain the contextual representation.  In this mini-project, you will be using the \texttt{BERTModel}\footnote{\url{https://huggingface.co/docs/transformers/model_doc/bert#transformers.BertModel}} or the \texttt{AutoModel}\footnote{\url{https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoModel}} class instances to instantiate the model. Here's an illustration:
+    \begin{python}
+    model = BERTModel.from_pretrained(<path>)   #Initialization
+    out = model(**tokenized_inp)
+    \end{python}
+    Here, the `\texttt{out}' variable contains various outputs of the model. You may use the \texttt{pooler\_output} attribute of the `out' variable to get the \texttt{[CLS]} token representation. This token representation can then be passed to a linear layer to obtain predictions. In this mini-project, for each of the two BERT variants, you'll be training a classifier with and without finetuning the BERT model.
+\end{enumerate}
+
+
+
+\subsection{Parameters}
+\begin{enumerate} 
+     %\item d$_{bert}$ = 50. The output dimension of the BERT model.
+     \item num\_classes = 2. Number of output categories for both tasks
+     \item d$_{rep}$ = \{128, 256\}. size of the embedding dimension (i.e, dimensions of $h_{[CLS]}$ representation)
+     \item max\_eps = 10. Maximum training epochs.
+\end{enumerate}
+
+\subsection{Hyper-parameters}
+Just like the previous mini projects, the only tunable hyper-parameter is the learning rate. Train your model using the following learning rates: \{0.0001, 0.00001, 0.000001\}. Run the training loop for a maximum of 10 epochs. The best model across learning rate and epochs is the one that gets the highest dev accuracy. Feel free to choose the batch size. \textbf{Please fix the random seed in your implementation.}
+
+\paragraph{Benchmark information. } A training epoch roughly takes under 30 seconds with a batch size of 64 on a Titan X machine. It requires roughly 8 GB of GPU RAM. You can ask for a GPU on CHPC by setting the \texttt{--gres=gpu:1} flag. 
