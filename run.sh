@@ -42,7 +42,7 @@ if [ "$TEST_ONLY" = true ] ; then
     python3 model.py -info -testOnly -size $SIZE -dataset $DATASET -test $TEST_FILE -load $LOAD_MODEL
 else
   if [ "$EVAL_ONLY" = true ] ; then 
-    python3 model.py -info -size $SIZE -dataset $DATASET -skipTraining
+    python3 model.py -info -size $SIZE -dataset $DATASET -skipFinetuning
   else
     python3 model.py -info -size $SIZE -dataset $DATASET
   fi  ;

@@ -176,9 +176,9 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-skipTraining",
+    "-skipFinetuning",
     action="store_true",
-    help="When set, skips training; For use when -testOnly is not set.",
+    help="When set, skips finetuning BERT; For use when -testOnly is not set.",
 )
 #---------------------------------------------------------------------------
 def checkIfExists(path, isDir=False, createIfNotExists=False): 
@@ -228,6 +228,10 @@ class BERTforClassification(torch.nn.Module):
             out_features=numClasses,
             bias=True
         )
+
+    def freezeBERT(self):
+        for param in self.model.parameters():
+            param.requires_grad = False 
     
     def forward(self, tokenizedInputs):
         return self.classifier(self.model(**tokenizedInputs)["pooler_output"])
@@ -421,19 +425,18 @@ def main(errTrace="main"):
     dataset = load_dataset(DATASETS[args.dataset], cache_dir=args.cacheDir)
 
     if not args.testOnly:
-        if not args.skipTraining:
-            trainDataLoader = createDataLoader(
-                dataset=dataset["train"], 
-                task=args.dataset,
-                modelPath=MODELS[args.model][args.size],
-                batchSize=args.batchSize
-            )
-            valDataLoader = createDataLoader(
-                dataset=dataset["validation"], 
-                task=args.dataset,
-                modelPath=MODELS[args.model][args.size],
-                batchSize=args.batchSize
-            )
+        trainDataLoader = createDataLoader(
+            dataset=dataset["train"], 
+            task=args.dataset,
+            modelPath=MODELS[args.model][args.size],
+            batchSize=args.batchSize
+        )
+        valDataLoader = createDataLoader(
+            dataset=dataset["validation"], 
+            task=args.dataset,
+            modelPath=MODELS[args.model][args.size],
+            batchSize=args.batchSize
+        )
         testDataLoader = createDataLoader(
             dataset=dataset["test"], 
             task=args.dataset,
@@ -458,96 +461,99 @@ def main(errTrace="main"):
 
     if not args.testOnly:
         lossFunction = torch.nn.CrossEntropyLoss().to(device)
-        if not args.skipTraining:
-            modelSavedAs = "{}{}_{}_{}.pt".format(args.out, args.model, args.size, args.dataset)
-            bestValAcc = None
-            for expInd, learningRate in enumerate(args.learningRate):
-                numTrainingSteps = args.numEpochs * len(trainDataLoader)
-                maxSteps = args.maxSteps
-                if maxSteps == -1:
-                    maxSteps = numTrainingSteps
-                elif maxSteps > 0:
-                    maxSteps = math.ceil(maxSteps/len(trainDataLoader))
+        modelSavedAs = "{}{}_{}_{}.pt".format(args.out, args.model, args.size, args.dataset)
+        bestValAcc = None
+        for expInd, learningRate in enumerate(args.learningRate):
+            numTrainingSteps = args.numEpochs * len(trainDataLoader)
+            maxSteps = args.maxSteps
+            if maxSteps == -1:
+                maxSteps = numTrainingSteps
+            elif maxSteps > 0:
+                maxSteps = math.ceil(maxSteps/len(trainDataLoader))
+            else: 
+                raise ValueError(f"Maximum no. of steps (maxSteps) has to be positive!")
+            
+            if expInd:
+                if args.load:
+                    model = torch.load(args.load)
+                    logging.info("Loaded BERTforClassification model from {}".format(args.load)) 
                 else: 
-                    raise ValueError(f"Maximum no. of steps (maxSteps) has to be positive!")
-                
-                if expInd:
-                    if args.load:
-                        model = torch.load(args.load)
-                        logging.info("Loaded BERTforClassification model from {}".format(args.load)) 
-                    else: 
-                        model = BERTforClassification(
-                            modelPath=MODELS[args.model][args.size],
-                            numClasses=NUM_CLASSES[args.dataset],
-                            cacheDir=args.cacheDir,
-                        )
-                        logging.info("Instantiated a BERTforClassification model") 
-                    model.to(device)
-                if args.optimizer == "adam":
-                    optimizer = torch.optim.Adam(
-                        model.parameters(), 
-                        lr=learningRate, 
-                        weight_decay=args.weightDecay,
-                        amsgrad=args.amsgrad,
+                    model = BERTforClassification(
+                        modelPath=MODELS[args.model][args.size],
+                        numClasses=NUM_CLASSES[args.dataset],
+                        cacheDir=args.cacheDir,
                     )
-                elif args.optimizer == "adagrad":
-                    optimizer = torch.optim.Adagrad(
-                        model.parameters(), 
-                        lr=learningRate, 
-                        weight_decay=args.weightDecay,                
-                    )
-                else:
-                    raise ValueError("[main] Invalid input to -optimizer: {}".format(args.optimizer))
-                totalSteps = args.numEpochs
-                if args.lrScheduler:
-                    scheduler = transformers.get_linear_schedule_with_warmup(
-                        optimizer,
-                        num_warmup_steps=0.1*totalSteps,
-                        # num_warmup_steps=2000,
-                        # num_warmup_steps=0,
-                        num_training_steps=totalSteps
-                    )
-                else:
-                    scheduler = None
-                lossFunction = torch.nn.CrossEntropyLoss().to(device)
+                    logging.info("Instantiated a BERTforClassification model") 
+                model.to(device)
 
-                logging.info("Learning Rate: {}".format(learningRate))
-                
-                for epoch in range(args.numEpochs):
-                    curAcc, curLoss = trainModel(
-                        model=model, 
-                        dataLoader=trainDataLoader, 
-                        lossFunction=lossFunction, 
-                        optimizer=optimizer, 
-                        device=device, 
-                        scheduler=scheduler, 
-                        maxSteps=maxSteps,
-                    )
-                    maxSteps -= len(trainDataLoader)
-                    valAcc, valLoss = evalModel(
-                        model=model, 
-                        dataLoader=valDataLoader,
-                        lossFunction=lossFunction,
-                        device=device,
-                        dataDesc="Validation batch", 
-                    )
+            if args.skipFinetuning:
+                model.freezeBERT()
 
-                    logging.info("Epoch {}/{}\nTraining Loss: {:0.2f}\nTrain Accuracy: {:0.2f}%\nValidation Loss: {:0.2f}\nValidation Accuracy: {:0.2f}%".format(epoch+1, args.numEpochs, curLoss, curAcc*100, valLoss, valAcc*100))
-                    logging.info("*****")
+            if args.optimizer == "adam":
+                optimizer = torch.optim.Adam(
+                    model.parameters(), 
+                    lr=learningRate, 
+                    weight_decay=args.weightDecay,
+                    amsgrad=args.amsgrad,
+                )
+            elif args.optimizer == "adagrad":
+                optimizer = torch.optim.Adagrad(
+                    model.parameters(), 
+                    lr=learningRate, 
+                    weight_decay=args.weightDecay,                
+                )
+            else:
+                raise ValueError("[main] Invalid input to -optimizer: {}".format(args.optimizer))
+            totalSteps = args.numEpochs
+            if args.lrScheduler:
+                scheduler = transformers.get_linear_schedule_with_warmup(
+                    optimizer,
+                    num_warmup_steps=0.1*totalSteps,
+                    # num_warmup_steps=2000,
+                    # num_warmup_steps=0,
+                    num_training_steps=totalSteps
+                )
+            else:
+                scheduler = None
+            lossFunction = torch.nn.CrossEntropyLoss().to(device)
 
-                    if bestValAcc == None or valAcc >= bestValAcc:
-                        bestValAcc = valAcc
-                        bestLearningRate = learningRate
-                        torch.save(model, modelSavedAs)
-                        logging.info("Model saved at '{}'".format(modelSavedAs))
-                    if maxSteps <= 0:
-                        logging.info("Max steps reached!")
-                        break
-            logging.info("Best learning rate: {}".format(bestLearningRate))
-            logging.info("Best model's validation accuracy: {:0.2f}%".format(bestValAcc*100))
+            logging.info("Learning Rate: {}".format(learningRate))
+            
+            for epoch in range(args.numEpochs):
+                curAcc, curLoss = trainModel(
+                    model=model, 
+                    dataLoader=trainDataLoader, 
+                    lossFunction=lossFunction, 
+                    optimizer=optimizer, 
+                    device=device, 
+                    scheduler=scheduler, 
+                    maxSteps=maxSteps,
+                )
+                maxSteps -= len(trainDataLoader)
+                valAcc, valLoss = evalModel(
+                    model=model, 
+                    dataLoader=valDataLoader,
+                    lossFunction=lossFunction,
+                    device=device,
+                    dataDesc="Validation batch", 
+                )
 
-            model = torch.load(modelSavedAs)
-            logging.info("Loaded best model from {}".format(modelSavedAs))
+                logging.info("Epoch {}/{}\nTraining Loss: {:0.2f}\nTrain Accuracy: {:0.2f}%\nValidation Loss: {:0.2f}\nValidation Accuracy: {:0.2f}%".format(epoch+1, args.numEpochs, curLoss, curAcc*100, valLoss, valAcc*100))
+                logging.info("*****")
+
+                if bestValAcc == None or valAcc >= bestValAcc:
+                    bestValAcc = valAcc
+                    bestLearningRate = learningRate
+                    torch.save(model, modelSavedAs)
+                    logging.info("Model saved at '{}'".format(modelSavedAs))
+                if maxSteps <= 0:
+                    logging.info("Max steps reached!")
+                    break
+        logging.info("Best learning rate: {}".format(bestLearningRate))
+        logging.info("Best model's validation accuracy: {:0.2f}%".format(bestValAcc*100))
+
+        model = torch.load(modelSavedAs)
+        logging.info("Loaded best model from {}".format(modelSavedAs))
             
         testAcc, _ = evalModel(
             model=model, 
